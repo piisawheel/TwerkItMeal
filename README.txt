@@ -1,3 +1,23 @@
+This is a modified version of Kyle B Cox's TwerkItMeal.
+
+It has been updated to forge 1.16.5.
+The config has been update with more options.
+Dirt can spawn grass blacks.
+Grass blocks can be twerked and have a small chance to spawn bamboo.
+Whitelist and blacklist code updated (either or).
+Default is to use whitelist now with dirt, grass, and bamboo varients.
+These changes are so I can include this mod into a curated skyblock modpack.
+
+The mod used to use a 50% chance to decide if it would bonemeal everything in the area.
+Now there's a 50% chance (configurable) to trigger on any particular growable except grass (5%).
+This is because it was bonemealing every grass block creating insane amounts of tall grass.
+There's a 10% chance of dirt becoming grass, and a 5% chance of grass spawning bamboo.
+That can be disabled by removing dirt from the whitelist or adding it to your blacklist.
+See the config for more details.
+(You might need to run the game with the mod once to generate it).
+
+Below follows the original Readme.
+
 -------------------------------------------
 Source installation information for modders
 -------------------------------------------
