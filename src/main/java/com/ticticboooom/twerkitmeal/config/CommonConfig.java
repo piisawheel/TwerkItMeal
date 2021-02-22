@@ -1,15 +1,8 @@
 package com.ticticboooom.twerkitmeal.config;
 
-import com.google.common.collect.ImmutableList;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.ForgeRegistryEntry;
-
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CommonConfig {
     public final ForgeConfigSpec.BooleanValue showParticles;

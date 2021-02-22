@@ -1,7 +1,6 @@
 package com.ticticboooom.twerkitmeal.config;
 
 import com.ticticboooom.twerkitmeal.TwerkItMeal;
-import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 
 import java.util.List;
