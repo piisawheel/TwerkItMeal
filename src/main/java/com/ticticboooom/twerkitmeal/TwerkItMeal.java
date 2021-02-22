@@ -87,7 +87,7 @@ public class TwerkItMeal {
                     }
                     nextRandom = world.getRandom().nextDouble();
                     if (blockState.hasProperty(CropsBlock.AGE)) {
-                    	if (nextRandom > .5) { 
+                    	if (nextRandom > TwerkConfig.chance) { 
                     		continue;
                     	}
                         int growth = blockState.get(CropsBlock.AGE);
@@ -99,11 +99,13 @@ public class TwerkItMeal {
                     		//5 percent chance to add bamboo to empty grass block
                     		//5 percent (other side of random tick) to apply bonemeal to grass.
                     		if (aboveState.getBlock() == Blocks.AIR && nextRandom <= 0.05) {
-                    			world.setBlockState(above, Blocks.BAMBOO_SAPLING.getDefaultState());
+                    			if (TwerkConfig.spawnBamboo) {
+                    				world.setBlockState(above, Blocks.BAMBOO_SAPLING.getDefaultState());                    				
+                    			}
                     		} else if (nextRandom >= 0.95) {
                         		BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), world, growablePos, player);
                     		}
-                    	} else if (nextRandom <= .5) {
+                    	} else if (nextRandom <= TwerkConfig.chance) {
                     		BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), world, growablePos, player);
                     	}
                     	//10 percent chance to turn dirt into grass.
@@ -117,9 +119,11 @@ public class TwerkItMeal {
 
         private List<BlockPos> getNearestBlocks(World world, BlockPos pos) {
             List<BlockPos> list = new ArrayList<>();
-            for (int x = -2; x <= 2; x++)
-                for (int y = -2; y <= 2; y++)
-                    for (int z = -2; z <= 2; z++) {
+            int range = TwerkConfig.rangeHorizontal;
+            int height = TwerkConfig.rangeVertical;
+            for (int x = -range; x <= range; x++)
+                for (int y = -height; y <= height; y++)
+                    for (int z = -range; z <= range; z++) {
                         Block block = world.getBlockState(new BlockPos(x + pos.getX(), y + pos.getY(), z + pos.getZ())).getBlock();
                         if (block instanceof IGrowable || block == Blocks.DIRT) {
                             if (FilterListHelper.shouldAllow(block.getRegistryName().toString())) {
