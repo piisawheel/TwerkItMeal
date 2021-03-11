@@ -1,7 +1,6 @@
 package com.ticticboooom.twerkitmeal.config;
 
 import com.ticticboooom.twerkitmeal.TwerkItMeal;
-
 import net.minecraftforge.fml.config.ModConfig;
 
 import java.util.List;
@@ -12,7 +11,10 @@ public class TwerkConfig {
     public static List<String> blackList;
     public static List<String> whitelist;
     public static int minCrouchesToApplyBonemeal;
-    public static int rangeHorizontal;
+    public static int effectRadius;
+    public static boolean saplingsOnly;
+    public static int distanceSprintedToGrow;
+    public static double sprintGrowChance;
     public static int  rangeVertical;
     public static double  chance;
     public static boolean spawnBamboo;
@@ -23,7 +25,9 @@ public class TwerkConfig {
         blackList = TwerkItMeal.COMMON_CONFIG.blackList.get();
         whitelist = TwerkItMeal.COMMON_CONFIG.whitelist.get();
         minCrouchesToApplyBonemeal = TwerkItMeal.COMMON_CONFIG.minCrouchesToApplyBonemeal.get();
-        rangeHorizontal = TwerkItMeal.COMMON_CONFIG.rangeHorizontal.get();
+        effectRadius = TwerkItMeal.COMMON_CONFIG.effectRadius.get();
+        saplingsOnly = TwerkItMeal.COMMON_CONFIG.saplingsOnly.get();
+        sprintGrowChance = TwerkItMeal.COMMON_CONFIG.sprintGrowChance.get();
         rangeVertical = TwerkItMeal.COMMON_CONFIG.rangeVertical.get();
         chance = TwerkItMeal.COMMON_CONFIG.chance.get();
         spawnBamboo = TwerkItMeal.COMMON_CONFIG.spawnBamboo.get();

@@ -2,11 +2,21 @@ package com.ticticboooom.twerkitmeal.helper;
 
 import com.ticticboooom.twerkitmeal.config.TwerkConfig;
 
+import net.minecraft.block.Block;
+import net.minecraft.tags.BlockTags;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class FilterListHelper {
-    public static boolean shouldAllow(String key) {
+    public static boolean shouldAllow(String key, Block block) {
+    	//if we are looking at saplings only
+        if (TwerkConfig.saplingsOnly){
+        	//if the block matches the saplings list, return true (allow)
+        	//or false if it doesn't match.
+            return BlockTags.SAPLINGS.contains(block);
+        }
+
     	if (TwerkConfig.useWhitelist) {
     		//run through whitelist.
             List<String> variations = new ArrayList<>();

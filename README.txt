@@ -13,6 +13,7 @@ Now there's a 50% chance (configurable) to trigger on any particular growable ex
 This is because it was bonemealing every grass block creating insane amounts of tall grass.
 There's a 10% chance of dirt becoming grass, and a 5% chance of grass spawning bamboo.
 That can be disabled by removing dirt from the whitelist or adding it to your blacklist.
+Bamboo has it's own setting, as well as the effective range.
 See the config for more details.
 (You might need to run the game with the mod once to generate it).
 

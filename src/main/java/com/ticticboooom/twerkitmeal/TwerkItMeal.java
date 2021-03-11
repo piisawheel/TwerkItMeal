@@ -27,111 +27,131 @@ import java.util.*;
 
 @Mod(TwerkItMeal.MOD_ID)
 public class TwerkItMeal {
-    public static final String MOD_ID = "twerkitmeal";
+	public static final String MOD_ID = "twerkitmeal";
 
-    static final ForgeConfigSpec commonSpec;
-    public static final CommonConfig COMMON_CONFIG;
+	static final ForgeConfigSpec commonSpec;
+	public static final CommonConfig COMMON_CONFIG;
 
-    static {
-        final Pair<CommonConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(CommonConfig::new);
-        commonSpec = specPair.getRight();
-        COMMON_CONFIG = specPair.getLeft();
-    }
+	static {
+		final Pair<CommonConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(CommonConfig::new);
+		commonSpec = specPair.getRight();
+		COMMON_CONFIG = specPair.getLeft();
+	}
 
-    public TwerkItMeal() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, commonSpec, "twerk-config.toml");
-        MinecraftForge.EVENT_BUS.register(new RegistryEvents());
-    }
+	public TwerkItMeal() {
+		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, commonSpec, "twerk-config.toml");
+		MinecraftForge.EVENT_BUS.register(new RegistryEvents());
+	}
 
 
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-    public static class RegistryEvents {
+	@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+	public static class RegistryEvents {
 
-        private final Map<UUID, Integer> crouchCount = new HashMap<>();
-        private final Map<UUID, Boolean> prevSneaking = new HashMap<>();
+		private final Map<UUID, Integer> crouchCount = new HashMap<>();
+		private final Map<UUID, Boolean> prevSneaking = new HashMap<>();
+		private final Map<UUID, Integer> playerDistance = new HashMap<>();
 
-        @SubscribeEvent
-        public void onTwerk(TickEvent.PlayerTickEvent event) {
-            if (event.player.world.isRemote) {
-                return;
-            }
-            UUID uuid = PlayerEntity.getUUID(event.player.getGameProfile());
-            if (!crouchCount.containsKey(uuid)){
-                crouchCount.put(uuid, 0);
-                prevSneaking.put(uuid, event.player.isSneaking());
-            }
+		@SubscribeEvent
+		public void onTwerk(TickEvent.PlayerTickEvent event) {
+			if (event.player.world.isRemote) {
+				return;
+			}
+			UUID uuid = PlayerEntity.getUUID(event.player.getGameProfile());
+			if (!crouchCount.containsKey(uuid)){
+				crouchCount.put(uuid, 0);
+				prevSneaking.put(uuid, event.player.isSneaking());
+				playerDistance.put(uuid, 0);
+			}
 
-            boolean wasPlayerSneaking = prevSneaking.get(uuid);
-            int playerCrouchCount = crouchCount.get(uuid);
-            if (!event.player.isSneaking()) {
-                prevSneaking.put(uuid, false);
-                return;
-            }
-            if (wasPlayerSneaking && event.player.isSneaking()) {
-                return;
-            } else if (!wasPlayerSneaking && event.player.isSneaking()) {
-                prevSneaking.put(uuid, true);
-                crouchCount.put(uuid, ++playerCrouchCount);
-            }
+			ServerWorld world = (ServerWorld) event.player.world;
 
-            ServerWorld world = (ServerWorld) event.player.world;
-            ServerPlayerEntity player = (ServerPlayerEntity) event.player;
-            if (playerCrouchCount >= TwerkConfig.minCrouchesToApplyBonemeal) {
-                crouchCount.put(uuid, 0);
-                double nextRandom = 0;
-                List<BlockPos> growables = getNearestBlocks(world, player.getPosition());
-                for (BlockPos growablePos : growables) {
-                    BlockState blockState = world.getBlockState(growablePos);
-                    if (!FilterListHelper.shouldAllow(blockState.getBlock().getRegistryName().toString())) {
-                        continue;
-                    }
-                    nextRandom = world.getRandom().nextDouble();
-                    if (blockState.hasProperty(CropsBlock.AGE)) {
-                    	if (nextRandom > TwerkConfig.chance) { 
-                    		continue;
-                    	}
-                        int growth = blockState.get(CropsBlock.AGE);
-                        world.setBlockState(growablePos, blockState.with(CropsBlock.AGE, growth < 7 ? growth + 1 : 7));
-                    } else if (blockState.getBlock() instanceof IGrowable) {
-                    	if (blockState.getBlock() == Blocks.GRASS_BLOCK) {
-                    		BlockPos above = growablePos.up();
-                    		BlockState aboveState = world.getBlockState(above);
-                    		//5 percent chance to add bamboo to empty grass block
-                    		//5 percent (other side of random tick) to apply bonemeal to grass.
-                    		if (aboveState.getBlock() == Blocks.AIR && nextRandom <= 0.05) {
-                    			if (TwerkConfig.spawnBamboo) {
-                    				world.setBlockState(above, Blocks.BAMBOO_SAPLING.getDefaultState());                    				
-                    			}
-                    		} else if (nextRandom >= 0.95) {
-                        		BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), world, growablePos, player);
-                    		}
-                    	} else if (nextRandom <= TwerkConfig.chance) {
-                    		BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), world, growablePos, player);
-                    	}
-                    	//10 percent chance to turn dirt into grass.
-                    } else if (blockState.getBlock() == Blocks.DIRT && nextRandom <= 0.1) {
-                    	world.setBlockState(growablePos, Blocks.GRASS_BLOCK.getDefaultState());
-                    }
-                    world.spawnParticle(player, ParticleTypes.HAPPY_VILLAGER, false, growablePos.getX() + world.rand.nextDouble(), growablePos.getY() + world.rand.nextDouble(), growablePos.getZ() + world.rand.nextDouble(), 10, 0, 0, 0, 3);
-                }
-            }
-        }
+			if (event.player.isSprinting() && world.getRandom().nextDouble() <= TwerkConfig.sprintGrowChance){
+				triggerGrowth(event, uuid);
+			}
 
-        private List<BlockPos> getNearestBlocks(World world, BlockPos pos) {
-            List<BlockPos> list = new ArrayList<>();
-            int range = TwerkConfig.rangeHorizontal;
-            int height = TwerkConfig.rangeVertical;
-            for (int x = -range; x <= range; x++)
-                for (int y = -height; y <= height; y++)
-                    for (int z = -range; z <= range; z++) {
-                        Block block = world.getBlockState(new BlockPos(x + pos.getX(), y + pos.getY(), z + pos.getZ())).getBlock();
-                        if (block instanceof IGrowable || block == Blocks.DIRT) {
-                            if (FilterListHelper.shouldAllow(block.getRegistryName().toString())) {
-                                list.add(new BlockPos(x + pos.getX(), y + pos.getY(), z + pos.getZ()));
-                            }
-                        }
-                    }
-            return list;
-        }
-    }
+			boolean wasPlayerSneaking = prevSneaking.get(uuid);
+			int playerCrouchCount = crouchCount.get(uuid);
+			if (!event.player.isSneaking()) {
+				prevSneaking.put(uuid, false);
+				return;
+			}
+			if (wasPlayerSneaking && event.player.isSneaking()) {
+				return;
+			} else if (!wasPlayerSneaking && event.player.isSneaking()) {
+				prevSneaking.put(uuid, true);
+				crouchCount.put(uuid, ++playerCrouchCount);
+			}
+
+			//50 percent chance removed and exchanged for a per block chance in config.
+			if (playerCrouchCount >= TwerkConfig.minCrouchesToApplyBonemeal) {
+				triggerGrowth(event, uuid);
+			}
+		}
+
+		private void triggerGrowth(TickEvent.PlayerTickEvent event, UUID uuid) {
+			double nextRandom = 0;
+
+			crouchCount.put(uuid, 0);
+			List<BlockPos> growables = getNearestBlocks(event.player.world, event.player.getPosition());
+			for (BlockPos growablePos : growables) {
+				BlockState blockState = event.player.world.getBlockState(growablePos);
+				nextRandom = event.player.world.getRandom().nextDouble();
+				boolean triggerParticles = false;
+				if (blockState.hasProperty(CropsBlock.AGE)) {
+					//nested because we don't want to drop into a different block if the chance doesnt happen.
+					if (nextRandom <= TwerkConfig.chance) { 
+						int growth = blockState.get(CropsBlock.AGE);
+						event.player.world.setBlockState(growablePos, blockState.with(CropsBlock.AGE, growth < 7 ? growth + 1 : 7));
+						triggerParticles = true;
+					}
+				} else if (blockState.getBlock() instanceof IGrowable) {
+					if (blockState.getBlock() == Blocks.GRASS_BLOCK) {
+						BlockPos above = growablePos.up();
+						BlockState aboveState = event.player.world.getBlockState(above);
+						//5 percent chance to add bamboo to empty grass block
+						//5 percent (other side of random tick) to apply bonemeal to grass.
+						if (aboveState.getBlock() == Blocks.AIR && nextRandom <= 0.05) {
+							if (TwerkConfig.spawnBamboo) {
+								event.player.world.setBlockState(above, Blocks.BAMBOO_SAPLING.getDefaultState());
+								triggerParticles = true;
+							}
+						} else if (nextRandom >= 0.95) {
+							BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), event.player.world, growablePos, event.player);
+							triggerParticles = true;
+						}
+					} else if (nextRandom <= TwerkConfig.chance) {
+						BoneMealItem.applyBonemeal(new ItemStack(Items.BONE_MEAL), event.player.world, growablePos, event.player);
+						triggerParticles = true;
+					}
+					//10 percent chance to turn dirt into grass.
+				} else if (blockState.getBlock() == Blocks.DIRT && nextRandom <= 0.1) {
+					event.player.world.setBlockState(growablePos, Blocks.GRASS_BLOCK.getDefaultState());
+					triggerParticles = true;
+				}
+				//only trigger particles if something actually grows.  Should significantly reduce the number of particles that shows.
+				if (triggerParticles) {
+					((ServerWorld)event.player.world).spawnParticle((ServerPlayerEntity) event.player, ParticleTypes.HAPPY_VILLAGER, false, growablePos.getX() + event.player.world.rand.nextDouble(), growablePos.getY() + event.player.world.rand.nextDouble(), growablePos.getZ() + event.player.world.rand.nextDouble(), 10, 0, 0, 0, 3);
+				}
+			}
+		}
+		private List<BlockPos> getNearestBlocks(World world, BlockPos pos) {
+			List<BlockPos> list = new ArrayList<>();
+			int range = TwerkConfig.effectRadius;
+			int height = TwerkConfig.rangeVertical;
+			for (int x = -range; x <= range; x++)
+				for (int y = -height; y <= height; y++)
+					for (int z = -range; z <= range; z++) {
+						Block block = world.getBlockState(new BlockPos(x + pos.getX(), y + pos.getY(), z + pos.getZ())).getBlock();
+						if (block instanceof IGrowable || block == Blocks.DIRT) {
+							//performance
+							//by filtering the block list when we gather the blocks, instead of when we actually do the growth check,
+							//we will loop the same amount of times _here,_ but will have less to loop through in the calling function.
+							if (FilterListHelper.shouldAllow(block.getRegistryName().toString(), block)) {
+								list.add(new BlockPos(x + pos.getX(), y + pos.getY(), z + pos.getZ()));
+							}
+						}
+					}
+			return list;
+		}
+	}
 }
